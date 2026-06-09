@@ -1,14 +1,25 @@
 <?php
+session_start();
+
+if (!isset($_SESSION['usuario_id'])) {
+  header('Location: login.php');
+  exit;
+}
+
 require_once 'acoes.php';
 
 $editarID = $_GET['editar'] ?? null;
 $filtro = $_GET['filtro'] ?? 'todas';
 $where = match($filtro) {
-    'pendentes'  => 'WHERE concluida = 0',
-    'concluidas' => 'WHERE concluida = 1',
+    'pendentes'  => 'AND concluida = 0',
+    'concluidas' => 'AND concluida = 1',
     default      => ''
 };
-$tarefas = $db->query("SELECT * FROM tarefas $where ORDER BY created_at ASC")->fetchAll();
+$usuarioId = $_SESSION['usuario_id'];
+
+$tarefas = $db->prepare("SELECT * FROM tarefas WHERE usuario_id = :usuario_id $where ORDER BY created_at ASC");
+$tarefas->execute([':usuario_id' => $usuarioId]);
+$tarefas = $tarefas->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -21,6 +32,8 @@ $tarefas = $db->query("SELECT * FROM tarefas $where ORDER BY created_at ASC")->f
 <body>
 
   <h1>Minhas Tarefas</h1>
+
+  <a href="logout.php" class="btn-logout">Sair</a>
 
   <div class="filtros">
     <a href="index.php?filtro=todas"
